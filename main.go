@@ -71,7 +71,7 @@ func main() {
 	}()
 
 	files := make(map[string][]FileEntry)
-	duplicatedFiles := make(map[string][]FileEntry)
+	duplicateFiles := make(map[string][]FileEntry)
 
 	for fileE := range ch {
 		files[fileE.name] = append(files[fileE.name], fileE)
@@ -79,18 +79,18 @@ func main() {
 
 	for key, val := range files {
 		if len(val) > 1 {
-			duplicatedFiles[key] = val
+			duplicateFiles[key] = val
 		}
 	}
 
-	for fName, files := range duplicatedFiles {
+	for fName, files := range duplicateFiles {
 		fmt.Println("##################################")
 		fmt.Printf("File: %s \n", fName)
 
 		for _, file := range files {
 			fmt.Printf("\tPath: %v\n", file.path)
 			fmt.Printf("\tSize: %v\n", file.size)
-			fmt.Printf("\todified: %v\n\n", file.modified)
+			fmt.Printf("\tModified: %v\n\n", file.modified)
 		}
 		fmt.Println("##################################")
 	}
