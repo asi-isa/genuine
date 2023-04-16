@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
-	"os"
-	"sync"
 	"time"
+
+	"github.com/asi-isa/trav"
 )
 
 func handleErr(err error) {
@@ -22,61 +22,38 @@ type FileEntry struct {
 	modified time.Time
 }
 
-func traverse(wg *sync.WaitGroup, path string, clb func(string, fs.DirEntry)) {
-	dirEntries, err := os.ReadDir(path)
+func createEntry(path string, entry fs.DirEntry) (FileEntry, bool) {
+	info, err := entry.Info()
+	handleErr(err)
 
-	if err == nil {
-		for _, entry := range dirEntries {
-			if entry.IsDir() {
-				traverse(wg, path+"/"+entry.Name(), clb)
-			} else {
-				wg.Add(1)
-				go clb(path, entry)
-			}
-		}
+	size := info.Size()
+
+	const threshold = 100_000_000
+
+	if size > threshold {
+		name := info.Name()
+		path += "/" + name
+		time := info.ModTime()
+
+		return FileEntry{name, path, size, time}, true
 	}
+
+	return *new(FileEntry), false
 }
 
 func main() {
 	// cla
-	const threshold = 100_000_000
-	const path = "/"
+	const root = "/"
 
-	ch := make(chan FileEntry)
-	var wg sync.WaitGroup
-
-	sendEntry := func(path string, entry fs.DirEntry) {
-		defer wg.Done()
-
-		info, err := entry.Info()
-		handleErr(err)
-
-		size := info.Size()
-
-		if size > threshold {
-
-			name := info.Name()
-			path += "/" + name
-			time := info.ModTime()
-
-			ch <- FileEntry{name, path, size, time}
-		}
-	}
-
-	go func() {
-		defer close(ch)
-		defer wg.Wait()
-
-		traverse(&wg, path, sendEntry)
-	}()
+	var trav = trav.New[FileEntry](root)
+	ch := trav.Traverse(createEntry)
 
 	files := make(map[string][]FileEntry)
-	duplicateFiles := make(map[string][]FileEntry)
-
 	for fileE := range ch {
 		files[fileE.name] = append(files[fileE.name], fileE)
 	}
 
+	duplicateFiles := make(map[string][]FileEntry)
 	for key, val := range files {
 		if len(val) > 1 {
 			duplicateFiles[key] = val
