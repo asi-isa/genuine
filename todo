@@ -1,0 +1,19 @@
+compare times
+  sequential
+  concurrent with channel
+  concurrent with buffered channel 
+    -> no difference to unbuffered with capacity 10, 10_000
+  concurrent with mutex
+  'native' fs.WalkDir
+  rust hakiki
+    -> time hakiki ~ 2 min
+    -> time genuine(channel) ~ 1.5 min (and it traverses hidden dirs)
+
+CLA
+
+abstract traversing
+  g.Traverse(path, clb)
+
+  abstract WaitGroup(or more general concurrent) logic from consumer
+    -> wrapper for clb
+      -> clb_w(clb) { defer wg.Done(); clb(); }
